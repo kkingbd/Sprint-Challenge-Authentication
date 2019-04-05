@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const secret = require('../database/secrets').jwtSecret;
 
 const jwtKey =
   process.env.JWT_SECRET ||
@@ -7,7 +6,8 @@ const jwtKey =
 
 // quickly see what this file exports
 module.exports = {
-  authenticate, generateToken
+  authenticate,
+  generateToken
 };
 
 // implementation details
@@ -17,9 +17,10 @@ function authenticate(req, res, next) {
   if (token) {
     jwt.verify(token, jwtKey, (err, decoded) => {
       if (err) return res.status(401).json(err);
-      req.decoded = decoded;
-      next();
 
+      req.decoded = decoded;
+
+      next();
     });
   } else {
     return res.status(401).json({
@@ -28,13 +29,10 @@ function authenticate(req, res, next) {
   }
 }
 
-function generateToken(user){
+function generateToken(user) {
   const payload = {
-    subject: user.id,
-    username : user.username,
+    uid: user.id,
   };
-  const options ={
-    expiresIn : '1h',
-  }
-  return  jwt.sign(payload, secret, options);
+
+  return jwt.sign(payload, jwtKey);
 }

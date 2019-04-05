@@ -1,7 +1,8 @@
 const axios = require('axios');
-const db = require('../database/dbConfig.js');
 const bcrypt = require('bcryptjs');
-const { authenticate , generateToken} = require('../auth/authenticate');
+
+const db = require('../database/dbConfig');
+const { authenticate, generateToken } = require('../auth/authenticate');
 
 module.exports = server => {
   server.post('/api/register', register);
@@ -10,45 +11,30 @@ module.exports = server => {
 };
 
 function register(req, res) {
-  let user = req.body;
-  const hash = bcrypt.hashSync(user.password, 10); 
-  if(user.username && user.password){
-    user.password = hash;
-  
-    db('users')
+  const user = req.body;
+
+  user.password = bcrypt.hashSync(user.password);
+  db('users')
     .insert(user)
-      .then(info => {
-        res.status(201).json({message: "Registration Successful", info});
-      })
-      .catch(error => {
-        res.status(500).json({error: "Unable to Register, Pick a different username", error});
-      });
-  } else{
-    res.status(402).json({error: 'Username and Password both required'})
-  }
-};
+    .then(ids => res.status(201).json({ id: ids[0] }))
+    .catch(err => res.status(500).json(err));
+}
 
 function login(req, res) {
-  // implement user login
-    let { username, password } = req.body;
-    
-    db('users')
-      .first()
-      .then(user => {
-        if (user && bcrypt.compareSync(password, user.password)) {
-          const token = generateToken(user);
-          res.status(200).json({
-            message: `Welcome ${username}!`,
-            token,
-          });
-        } else {
-          res.status(401).json({ message: 'Invalid Credentials' });
-        }
-      })
-      .catch(error => {
-        res.status(500).json(error);
-      });
-  };
+  const user = req.body;
+
+  db('users')
+    .where('username', user.username)
+    .then(users => {
+      if (users.length && bcrypt.compareSync(user.password, users[0].password)) {
+        const token = generateToken(users[0]);
+        res.json({ message: 'Login successful', token });
+      } else {
+        res.status(401).json({ error: 'Invalid username or password' });
+      }
+    })
+    .catch(err => res.status(500).json(err));
+}
 
 function getJokes(req, res) {
   const requestOptions = {
