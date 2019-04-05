@@ -1,6 +1,5 @@
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
-
 const db = require('../database/dbConfig');
 const { authenticate, generateToken } = require('../auth/authenticate');
 
@@ -16,7 +15,7 @@ function register(req, res) {
   user.password = bcrypt.hashSync(user.password);
   db('users')
     .insert(user)
-    .then(ids => res.status(201).json({ id: ids[0] }))
+    .then(ids => res.status(201).json({ message: "Registration Successful", ids} ))
     .catch(err => res.status(500).json(err));
 }
 
@@ -27,7 +26,7 @@ function login(req, res) {
     .where('username', user.username)
     .then(users => {
       if (users.length && bcrypt.compareSync(user.password, users[0].password)) {
-        const token = generateToken(users[0]);
+        const token = generateToken(users);
         res.json({ message: 'Login successful', token });
       } else {
         res.status(401).json({ error: 'Invalid username or password' });
